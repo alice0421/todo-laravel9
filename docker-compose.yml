@@ -1,0 +1,48 @@
+version: '3.8' # composeファイル（≠docker compose）のバージョンを記載
+
+services:
+  # phpの設定
+  laravel:
+    container_name: app_todo-laravel9
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    volumes:
+      - ./src/:/var/www/html
+    environment: # Laravelの.envに設定してもOK
+      - DB_CONNECTION=mysql
+      - DB_HOST=db # mysqlのサーバー名を指定
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_NAME}
+      - DB_USERNAME=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+
+  # nginxの設定
+  web: # サービス名を指定
+    container_name: nginx_todo-laravel9 # コンテナ名を指定
+    build: # ビルドするDockerfileの設定
+      context: . # docker buildコマンドを実行する場所を指定（基本ルートディレクトリを指定しておけば良い）
+      dockerfile: ./docker/nginx/Dockerfile # Dockerfileがあるパスを指定
+    ports: # ローカルとDockerコンテナ間のポート番号の対応付けを設定
+      - ${WEB_PORT}:8080 # {ローカルのポート番号}:{Dockerコンテナのポート番号}（ローカルは未使用のポートを指定すること、DockerはかぶっていてもOK）
+    depends_on: # コンテナ間の依存関係を設定
+      - laravel # 先に起動するコンテナのサービス名を指定（コンテナ名ではない）
+    volumes: # ローカルとDockerコンテナ間のディレクトリやファイルなどのリソースを対応付け
+      - ./src/:/var/www/html # {ローカルのリソースのパス}:{Dockerコンテナのリソースのパス}
+  
+  # mysqlの設定
+  db:
+    container_name: mysql_todo-laravel9
+    build:
+      context: .
+      dockerfile: ./docker/mysql/Dockerfile
+    ports:
+      - ${DB_PORT}:3306
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      TZ: 'Asia/Tokyo'
+    volumes:
+      - ./db:/var/lib/mysql # {ローカルのvolumeの名前}:{DockerコンテナのDBのパス}
