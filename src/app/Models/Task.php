@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Task extends Model
 {
-    // TODO: リレーション
     use HasFactory;
 
     public function user()
